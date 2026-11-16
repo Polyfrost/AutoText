@@ -35,7 +35,7 @@ object MacroPayloadParser {
 
         val normalized = normalizeSpaces(raw)
         if (normalized.isEmpty()) return PayloadValidation.Invalid(PayloadValidation.Reason.EMPTY)
-        if (normalized.length > MAX_CHAT_LENGTH) return PayloadValidation.Invalid(PayloadValidation.Reason.TOO_LONG)
+        if (normalized.trimEnd().length > MAX_CHAT_LENGTH) return PayloadValidation.Invalid(PayloadValidation.Reason.TOO_LONG)
         if (!normalized.startsWith('/')) return PayloadValidation.Valid(MacroPayload.Message(normalized))
 
         val command = normalized.substring(1)
@@ -58,6 +58,8 @@ object MacroPayloadParser {
                 pendingSpace = true
             }
         }
+        // Keep a single trailing space so prefilled input like "/r " stays ready for an argument.
+        if (pendingSpace) out.append(' ')
         return out.toString()
     }
 }
