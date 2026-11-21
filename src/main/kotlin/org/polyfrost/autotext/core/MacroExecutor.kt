@@ -35,8 +35,8 @@ class MacroExecutor(
             }
             MacroDelivery.SEND -> {
                 when (val payload = parsed.payload) {
-                    is MacroPayload.Message -> target.sendMessage(payload.value)
-                    is MacroPayload.Command -> target.sendCommand(payload.value)
+                    is MacroPayload.Message -> target.sendMessage(payload.value.trimEnd())
+                    is MacroPayload.Command -> target.sendCommand(payload.value.trimEnd())
                 }
                 TriggerResult.DISPATCHED
             }
