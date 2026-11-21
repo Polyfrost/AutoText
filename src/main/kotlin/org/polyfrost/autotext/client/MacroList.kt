@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,8 +43,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -62,6 +65,7 @@ import org.polyfrost.oneconfig.api.ui.v1.components.rememberInteractionSource
 import org.polyfrost.oneconfig.api.ui.v1.keybind.OneConfigKeybind
 import org.polyfrost.oneconfig.api.ui.v1.theme.OneConfigTheme
 import org.polyfrost.oneconfig.api.ui.v1.theme.concentric
+import org.polyfrost.oneconfig.internal.ui.components.localizedString
 import kotlin.math.roundToInt
 
 internal class MacroRow(
@@ -113,13 +117,13 @@ internal object MacroList : SettingRowDecorator() {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(Component.translatable("autotext.macros"), Modifier, theme.textColor, 15.sp, FontWeight.Medium)
+                    Text(Component.translatable("autotext.macros"), Modifier, theme.textColor, macroText(15.sp, FontWeight.Medium))
                     Text(
                         Component.translatable("autotext.macros.description"),
-                        Modifier, theme.textColorSecondary, 13.sp,
+                        Modifier, theme.textColorSecondary, macroText(13.sp),
                     )
                 }
-                Text("${rows.size} / ${AutoTextConfig.MAX_MACROS}", Modifier, theme.textColorSecondary, 13.sp)
+                Text("${rows.size} / ${AutoTextConfig.MAX_MACROS}", Modifier, theme.textColorSecondary, macroText(13.sp))
                 AddButton(canAdd)
             }
             if (rows.isEmpty()) EmptyState() else ReorderableRows(rows, canAdd)
@@ -154,15 +158,15 @@ internal object MacroList : SettingRowDecorator() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Icon("plus", foreground, Modifier.size(14.dp))
-                Text(Component.translatable("autotext.macros.new"), Modifier, foreground, 13.sp, FontWeight.Medium)
+                Icon("plus", null, Modifier.size(14.dp), foreground)
+                Text(Component.translatable("autotext.macros.new"), Modifier, foreground, macroText(13.sp, FontWeight.Medium))
             }
         }
         if (enabled) {
             button()
         } else {
             Tooltip(
-                text = { Text(Component.translatable("autotext.macros.limit"), Modifier, theme.textColor, 12.sp) },
+                text = { Text(Component.translatable("autotext.macros.limit"), Modifier, theme.textColor, macroText(12.sp)) },
                 modifier = Modifier.widthIn(max = 200.dp),
                 anchor = Alignment.TopCenter,
                 content = button,
@@ -183,10 +187,10 @@ internal object MacroList : SettingRowDecorator() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(Component.translatable("autotext.macros.empty"), Modifier, theme.textColor, 14.sp, FontWeight.Medium)
+            Text(Component.translatable("autotext.macros.empty"), Modifier, theme.textColor, macroText(14.sp, FontWeight.Medium))
             Text(
                 Component.translatable("autotext.macros.empty.description"),
-                Modifier, theme.textColorSecondary, 13.sp,
+                Modifier, theme.textColorSecondary, macroText(13.sp),
             )
         }
     }
@@ -285,8 +289,9 @@ internal object MacroList : SettingRowDecorator() {
             ) {
                 Icon(
                     "dots-grid",
-                    if (dragging || hovered) theme.textColor else theme.textColorSecondary,
+                    null,
                     Modifier.size(16.dp),
+                    if (dragging || hovered) theme.textColor else theme.textColorSecondary,
                 )
             }
             Embedded(row.enabled)
@@ -340,15 +345,28 @@ internal object MacroList : SettingRowDecorator() {
         onClick: () -> Unit,
     ) {
         Tooltip(
-            text = { Text(Component.translatable(label), Modifier, OneConfigTheme.current.textColor, 12.sp) },
+            text = { Text(Component.translatable(label), Modifier, OneConfigTheme.current.textColor, macroText(12.sp)) },
             modifier = Modifier.widthIn(max = 160.dp),
             anchor = Alignment.TopCenter,
         ) {
-            if (enabled) {
-                IconButton(icon, Modifier.size(18.dp), foreground, hoveredForeground, true, false, onClick)
-            } else {
-                Icon(icon, OneConfigTheme.current.textColor.copy(alpha = 0.2f), Modifier.size(18.dp))
-            }
+            val source = remember { MutableInteractionSource() }
+            val hovered by source.collectIsHoveredAsState()
+            IconButton(
+                icon = icon,
+                contentDescription = localizedString(label, label),
+                onClick = onClick,
+                enabled = enabled,
+                tooltip = null,
+                tint = if (hovered) hoveredForeground else foreground,
+                interactionSource = source,
+                frameSize = 18.dp,
+                iconSize = 18.dp,
+                glass = false,
+            )
         }
     }
 }
+
+@Composable
+private fun macroText(size: TextUnit, weight: FontWeight = FontWeight.Normal): TextStyle =
+    OneConfigTheme.typography.body.copy(fontSize = size, fontWeight = weight)
